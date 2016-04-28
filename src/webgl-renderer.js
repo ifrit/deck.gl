@@ -36,7 +36,7 @@ const PROP_TYPES = {
   viewport: PropTypes.object.isRequired,
   camera: PropTypes.object.isRequired,
   lights: PropTypes.object,
-  blending: PropTypes.object,
+  blendMode: PropTypes.object,
   events: PropTypes.object,
 
   onRendererInitialized: PropTypes.func.isRequired,
@@ -163,7 +163,7 @@ export default class WebGLRenderer extends React.Component {
   _renderFrame() {
     const {
       viewport: {x, y, width, height},
-      blending: {enable, blendFunc, blendEquation},
+      blendMode: {enable, blendFunc, blendEquation},
       onBeforeRenderFrame,
       onAfterRenderFrame,
       onNeedRedraw,

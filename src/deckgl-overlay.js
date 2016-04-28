@@ -33,7 +33,27 @@ const PROP_TYPES = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   layers: PropTypes.array.isRequired,
-  blending: PropTypes.object
+  lights: PropTypes.object,
+  // TODO when do we want users to specify blendMode?
+  blendMode: PropTypes.object,
+  t: PropTypes.number
+};
+
+// TODO move blendMode to webgl-renderer? it does not concern layers
+const DEFAULT_BLENDING_MODE = {
+  enable: true,
+  blendFunc: ['SRC_ALPHA', 'ONE_MINUS_SRC_ALPHA'],
+  blendEquation: 'FUNC_ADD'
+};
+
+const DEFAULT_LIGHTS = {
+  enable: true,
+  ambient: {r: 1.0, g: 1.0, b: 1.0},
+  points: [{
+    diffuse: {r: 0.8, g: 0.8, b: 0.8},
+    specular: {r: 0.6, g: 0.6, b: 0.6},
+    position: [0.5, 0.5, 3]
+  }]
 };
 
 export default class DeckGLOverlay extends React.Component {
@@ -114,36 +134,34 @@ export default class DeckGLOverlay extends React.Component {
     return layersNeedRedraw(layers, {clearFlag: true});
   }
 
-  // @autobind
-  // onAfterRender
-
   render() {
-    const {width, height, layers, blending, ...otherProps} = this.props;
+    const {
+      width, height, layers, lights, blendMode, ...otherProps
+    } = this.props;
 
-    // if (layers.length === 0) {
-    //   return null;
-    // }
-
+    // TODO initializeLayers in render()?
     this.initializeLayers(layers);
 
-    return (
-      <WebGLRenderer
-        { ...otherProps }
+    const camera = flatWorld.getCamera();
 
-        width={ width }
-        height={ height }
+    const rendererProps = {
+      ...otherProps,
+      width,
+      height,
 
-        viewport={ new flatWorld.Viewport(width, height) }
-        camera={ flatWorld.getCamera() }
-        lights={ flatWorld.getLighting() }
-        blending={ blending || flatWorld.getBlending() }
-        pixelRatio={ flatWorld.getPixelRatio(window.devicePixelRatio) }
+      viewport: new flatWorld.Viewport(width, height),
+      camera,
+      lights: lights || DEFAULT_LIGHTS,
+      blendMode: blendMode || DEFAULT_BLENDING_MODE,
+      pixelRatio: window.devicePixelRatio,
 
-        onRendererInitialized={ this._onRendererInitialized }
-        onNeedRedraw={ this._checkIfNeedRedraw }
-        onMouseMove={ this._onMouseMove }
-        onClick={ this._onClick }/>
-    );
+      onRendererInitialized: this._onRendererInitialized,
+      onNeedRedraw: this._checkIfNeedRedraw,
+      onMouseMove: this._onMouseMove,
+      onClick: this._onClick
+    };
+
+    return <WebGLRenderer {...rendererProps} />;
   }
 
 }

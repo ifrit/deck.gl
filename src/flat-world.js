@@ -66,10 +66,6 @@ const flatWorld = {
     }
   },
 
-  getWorldSize() {
-    return flatWorld.size;
-  },
-
   // Camera height that will cover a plane of [-size, size]
   // to fit exactly the entire screen
   // Considering field of view is 45 degrees:
@@ -110,31 +106,10 @@ const flatWorld = {
     };
   },
 
-  getPixelRatio(ratio) {
-    return 1;
-    // return ratio || 1;
-  },
 
-  getLighting() {
     return {
-      enable: true,
-      ambient: {r: 1.0, g: 1.0, b: 1.0},
-      points: [{
-        diffuse: {r: 0.8, g: 0.8, b: 0.8},
-        specular: {r: 0.6, g: 0.6, b: 0.6},
-        position: [0.5, 0.5, 3]
-      }]
     };
   },
-
-  getBlending() {
-    return {
-      enable: true,
-      blendFunc: ['SRC_ALPHA', 'ONE_MINUS_SRC_ALPHA'],
-      blendEquation: 'FUNC_ADD'
-    };
-  }
-
 };
 
 export default flatWorld;
