@@ -77,8 +77,9 @@ void main(void) {
   mat2 rotationMatrix = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
   vec3 rotatedVertices = vec3(rotationMatrix * vertices.xy * radius, vertices.z);
   vec4 verticesPositions = worldMatrix * vec4(rotatedVertices, 1.0);
+  vec4 centroidPositions = worldMatrix * vec4(lnglatToScreen(positions.xy), positions.z, 0.0);
 
-  vec3 p = vec3(lnglatToScreen(positions.xy), positions.z) + verticesPositions.xyz;
+  vec3 p = centroidPositions.xyz + verticesPositions.xyz;
   gl_Position = projectionMatrix * vec4(p, 1.0);
 
   float alpha = pickingColors == selected ? 0.5 : opacity;
