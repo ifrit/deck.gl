@@ -103,6 +103,24 @@ export default class WebGLRenderer extends React.Component {
     this._animationLoop();
   }
 
+  componentWillReceiveProps(nextProps) {
+    const {camera} = this.state;
+
+    if (!camera || !nextProps.camera) {
+      return;
+    }
+
+    if (camera.position[0] === nextProps.camera.position[0] &&
+        camera.position[1] === nextProps.camera.position[1] &&
+        camera.position[2] === nextProps.camera.position[2]) {
+      return;
+    }
+
+    this.setState({
+      camera: new PerspectiveCamera(nextProps.camera)
+    });
+  }
+
   /**
    * Initialize LumaGL library and through it WebGL
    * @param {string} canvas

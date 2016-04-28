@@ -48,6 +48,7 @@ const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN ||
   'Set MAPBOX_ACCESS_TOKEN environment variable or put your token here.';
 
 const INITIAL_STATE = {
+  t: 0,
   viewport: {
     latitude: 37.751537058389985,
     longitude: -122.42694203247012,
@@ -77,9 +78,15 @@ function loadPoints(points) {
   return {type: 'LOAD_POINTS', points};
 }
 
+function timerTick() {
+  return {type: 'TIMER_TICK'};
+}
+
 // ---- Reducer ---- //
 function reducer(state = INITIAL_STATE, action) {
   switch (action.type) {
+  case 'TIMER_TICK':
+    return {...state, t: state.t + 1};
   case 'UPDATE_MAP':
     return {...state, viewport: action.viewport};
   case 'LOAD_CHOROPLETHS':
@@ -98,7 +105,7 @@ function reducer(state = INITIAL_STATE, action) {
         position: {
           x: Number(coords[1]),
           y: Number(coords[0]),
-          z: 10
+          z: 0
         },
         color: [88, 9, 124]
       };
@@ -115,6 +122,7 @@ function reducer(state = INITIAL_STATE, action) {
 // redux states -> react props
 function mapStateToProps(state) {
   return {
+    t: state.t,
     viewport: state.viewport,
     choropleths: state.choropleths,
     hexagons: state.hexagons,
@@ -193,7 +201,8 @@ class ExampleApp extends React.Component {
 
   componentDidMount() {
     // update arc stroke width
-    window.setTimeout(this._updateArcStrokeWidth, 3000);
+    // window.setTimeout(this._updateArcStrokeWidth, 3000);
+    window.setInterval(() => this.props.dispatch(timerTick()), 1000 / 30);
   }
 
   componentWillUnmount() {
@@ -325,9 +334,9 @@ class ExampleApp extends React.Component {
       zoom: viewport.zoom,
       data: hexData,
       isPickable: true,
-      opacity: 0.1,
-      onHover: this._handleHexagonHovered,
-      onClick: this._handleHexagonClicked
+      opacity: 0.2,
+      // onHover: this._handleHexagonHovered,
+      // onClick: this._handleHexagonClicked
     });
   }
 
@@ -343,13 +352,12 @@ class ExampleApp extends React.Component {
       zoom: viewport.zoom,
       isPickable: false,
       data: points,
-      onHover: this._handleScatterplotHovered,
-      onClick: this._handleScatterplotClicked
+      // onHover: this._handleScatterplotHovered,
+      // onClick: this._handleScatterplotClicked
     });
   }
 
   _renderArcLayer() {
-
     const {viewport, arcs} = this.props;
 
     return new ArcLayer({
@@ -365,26 +373,27 @@ class ExampleApp extends React.Component {
   }
 
   _renderOverlay() {
-    const {choropleths, hexagons, points} = this.props;
+    const {choropleths, hexagons, points, t} = this.props;
 
     // wait until data is ready before rendering
     if (!choropleths || !points || !hexagons) {
       return [];
     }
 
-    return (
-      <DeckGLOverlay
-        width={window.innerWidth}
-        height={window.innerHeight}
-        layers={[
-          this._renderGridLayer(),
-          this._renderChoroplethLayer(),
-          this._renderHexagonLayer(),
-          this._renderScatterplotLayer(),
-          this._renderArcLayer()
-        ]}
-      />
-    );
+    const deckGLOverlayProps = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      layers: [
+        // this._renderGridLayer(),
+        this._renderChoroplethLayer(),
+        this._renderHexagonLayer(),
+        this._renderScatterplotLayer(),
+        this._renderArcLayer()
+      ],
+      t
+    };
+
+    return <DeckGLOverlay {...deckGLOverlayProps} />;
   }
 
   _renderMap() {

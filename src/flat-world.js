@@ -95,19 +95,22 @@ const flatWorld = {
     }
   },
 
-  getCamera() {
+  getCamera(t = 0) {
     const cameraHeight = flatWorld.getCameraHeight();
+
+    const xx = Math.cos(t * Math.PI / 180);
+    const yy = Math.sin(t * Math.PI / 180);
+
+    const x = cameraHeight * xx * 0.4;
+    const y = cameraHeight * yy * 0.5;
+    const z = cameraHeight * 0.25;
     return {
-      fov: flatWorld.fov,
+      fov: 15,
       near: (cameraHeight + 1) / 100,
       far: cameraHeight + 1,
-      position: [0, 0, cameraHeight],
-      aspect: 1
-    };
-  },
-
-
-    return {
+      position: [x, y, -z],
+      target: [0, 0, 0],
+      up: [xx * 0.4, yy * 0.5, 0]
     };
   },
 };

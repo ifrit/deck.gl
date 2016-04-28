@@ -136,13 +136,13 @@ export default class DeckGLOverlay extends React.Component {
 
   render() {
     const {
-      width, height, layers, lights, blendMode, ...otherProps
+      width, height, layers, lights, blendMode, t, ...otherProps
     } = this.props;
 
     // TODO initializeLayers in render()?
     this.initializeLayers(layers);
 
-    const camera = flatWorld.getCamera();
+    const camera = flatWorld.getCamera(t);
 
     const rendererProps = {
       ...otherProps,
