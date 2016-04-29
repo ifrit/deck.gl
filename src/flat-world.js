@@ -108,9 +108,9 @@ const flatWorld = {
       fov: 15,
       near: (cameraHeight + 1) / 100,
       far: cameraHeight + 1,
-      position: [x, y, -z],
-      target: [0, 0, 0],
-      up: [xx * 0.4, yy * 0.5, 0]
+      position: [0, 0, cameraHeight],
+      target: [0, 0, -1],
+      up: [0, 1, 0]
     };
   },
 };

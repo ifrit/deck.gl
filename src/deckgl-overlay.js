@@ -23,7 +23,6 @@ import React, {PropTypes} from 'react';
 import autobind from 'autobind-decorator';
 
 import WebGLRenderer from './webgl-renderer';
-import flatWorld from './flat-world';
 import {
   matchLayers, finalizeOldLayers, updateMatchedLayers, initializeNewLayers,
   layersNeedRedraw
@@ -34,6 +33,8 @@ const PROP_TYPES = {
   height: PropTypes.number.isRequired,
   layers: PropTypes.array.isRequired,
   lights: PropTypes.object,
+  viewport: PropTypes.object.isRequired,
+  camera: PropTypes.object.isRequired,
   // TODO when do we want users to specify blendMode?
   blendMode: PropTypes.object,
   t: PropTypes.number
@@ -136,20 +137,17 @@ export default class DeckGLOverlay extends React.Component {
 
   render() {
     const {
-      width, height, layers, lights, blendMode, t, ...otherProps
+      width, height, layers, lights, blendMode, camera, viewport, ...otherProps
     } = this.props;
 
     // TODO initializeLayers in render()?
     this.initializeLayers(layers);
 
-    const camera = flatWorld.getCamera(t);
-
     const rendererProps = {
       ...otherProps,
       width,
       height,
-
-      viewport: new flatWorld.Viewport(width, height),
+      viewport,
       camera,
       lights: lights || DEFAULT_LIGHTS,
       blendMode: blendMode || DEFAULT_BLENDING_MODE,

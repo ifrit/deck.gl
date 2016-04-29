@@ -30,6 +30,8 @@ import ReactDOM from 'react-dom';
 import {createStore} from 'redux';
 import {Provider, connect} from 'react-redux';
 import autobind from 'autobind-decorator';
+import flatWorld from '../src/flat-world';
+import {PerspectiveCamera} from 'luma.gl';
 
 import MapboxGLMap from 'react-map-gl';
 import request from 'd3-request';
@@ -49,10 +51,12 @@ const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN ||
 
 const INITIAL_STATE = {
   t: 0,
-  viewport: {
+  mapViewport: {
     latitude: 37.751537058389985,
     longitude: -122.42694203247012,
-    zoom: 11.5
+    zoom: 11.5,
+    bearing: 45,
+    pitch: 0
   },
   choropleths: null,
   hexagons: null,
@@ -62,8 +66,8 @@ const INITIAL_STATE = {
 };
 
 // ---- Action ---- //
-function updateMap(viewport) {
-  return {type: 'UPDATE_MAP', viewport};
+function updateMap(mapViewport) {
+  return {type: 'UPDATE_MAP', mapViewport};
 }
 
 function loadChoropleths(choropleths) {
@@ -88,7 +92,7 @@ function reducer(state = INITIAL_STATE, action) {
   case 'TIMER_TICK':
     return {...state, t: state.t + 1};
   case 'UPDATE_MAP':
-    return {...state, viewport: action.viewport};
+    return {...state, mapViewport: action.mapViewport};
   case 'LOAD_CHOROPLETHS':
     return {...state, choropleths: action.choropleths};
   case 'LOAD_HEXAGONS':
@@ -123,7 +127,7 @@ function reducer(state = INITIAL_STATE, action) {
 function mapStateToProps(state) {
   return {
     t: state.t,
-    viewport: state.viewport,
+    mapViewport: state.mapViewport,
     choropleths: state.choropleths,
     hexagons: state.hexagons,
     points: state.points,
@@ -250,12 +254,17 @@ class ExampleApp extends React.Component {
 
   @autobind
   _handleResize() {
-    this.setState({width: window.innerWidth, height: window.innerHeight});
+    this.setState({
+      width: window.innerWidth,
+      height: window.innerHeight,
+      glViewport: new flatWorld.Viewport(window.innerWidth, window.innerHeight)
+    });
   }
 
   @autobind
-  _handleViewportChanged(viewport) {
-    this.props.dispatch(updateMap(viewport));
+  _handleViewportChanged(mapViewport) {
+    console.log(mapViewport);
+    this.props.dispatch(updateMap(mapViewport));
   }
 
   @autobind
@@ -289,15 +298,15 @@ class ExampleApp extends React.Component {
   }
 
   _renderGridLayer() {
-    const {viewport, points} = this.props;
+    const {mapViewport, points} = this.props;
 
     return new GridLayer({
       id: 'gridLayer',
       width: window.innerWidth,
       height: window.innerHeight,
-      latitude: viewport.latitude,
-      longitude: viewport.longitude,
-      zoom: viewport.zoom,
+      latitude: mapViewport.latitude,
+      longitude: mapViewport.longitude,
+      zoom: mapViewport.zoom,
       isPickable: false,
       opacity: 0.06,
       data: points
@@ -305,14 +314,14 @@ class ExampleApp extends React.Component {
   }
 
   _renderChoroplethLayer() {
-    const {viewport, choropleths} = this.props;
+    const {mapViewport, choropleths} = this.props;
     return new ChoroplethLayer({
       id: 'choroplethLayer',
       width: window.innerWidth,
       height: window.innerHeight,
-      latitude: viewport.latitude,
-      longitude: viewport.longitude,
-      zoom: viewport.zoom,
+      latitude: mapViewport.latitude,
+      longitude: mapViewport.longitude,
+      zoom: mapViewport.zoom,
       data: choropleths,
       opacity: 0.8,
       isPickable: false,
@@ -323,15 +332,15 @@ class ExampleApp extends React.Component {
   }
 
   _renderHexagonLayer() {
-    const {viewport, hexData} = this.props;
+    const {mapViewport, hexData} = this.props;
 
     return new HexagonLayer({
       id: 'hexagonLayer',
       width: window.innerWidth,
       height: window.innerHeight,
-      latitude: viewport.latitude,
-      longitude: viewport.longitude,
-      zoom: viewport.zoom,
+      latitude: mapViewport.latitude,
+      longitude: mapViewport.longitude,
+      zoom: mapViewport.zoom,
       data: hexData,
       isPickable: true,
       opacity: 0.2,
@@ -341,15 +350,15 @@ class ExampleApp extends React.Component {
   }
 
   _renderScatterplotLayer() {
-    const {viewport, points} = this.props;
+    const {mapViewport, points} = this.props;
 
     return new ScatterplotLayer({
       id: 'scatterplotLayer',
       width: window.innerWidth,
       height: window.innerHeight,
-      latitude: viewport.latitude,
-      longitude: viewport.longitude,
-      zoom: viewport.zoom,
+      latitude: mapViewport.latitude,
+      longitude: mapViewport.longitude,
+      zoom: mapViewport.zoom,
       isPickable: false,
       data: points,
       // onHover: this._handleScatterplotHovered,
@@ -358,59 +367,86 @@ class ExampleApp extends React.Component {
   }
 
   _renderArcLayer() {
-    const {viewport, arcs} = this.props;
+    const {mapViewport, arcs} = this.props;
 
     return new ArcLayer({
       id: 'arcLayer',
       width: window.innerWidth,
       height: window.innerHeight,
-      latitude: viewport.latitude,
-      longitude: viewport.longitude,
-      zoom: viewport.zoom,
+      latitude: mapViewport.latitude,
+      longitude: mapViewport.longitude,
+      zoom: mapViewport.zoom,
       data: arcs,
       strokeWidth: this.state.arcStrokeWidth || 1
     });
   }
 
   _renderOverlay() {
-    const {choropleths, hexagons, points, t} = this.props;
+    const {
+      mapViewport: {pitch, bearing},
+      choropleths, hexagons, points, t
+    } = this.props;
+    const {glViewport} = this.state;
 
     // wait until data is ready before rendering
     if (!choropleths || !points || !hexagons) {
       return [];
     }
 
-    const deckGLOverlayProps = {
+    const d = flatWorld.getCameraHeight();
+    const cosPitch = Math.cos(pitch * Math.PI / 180);
+    const sinPitch = Math.sin(pitch * Math.PI / 180);
+    const cosBearing = Math.cos(bearing * Math.PI / 180);
+    const sinBearing = Math.sin(bearing * Math.PI / 180);
+
+    const px = sinPitch * sinBearing;
+    const py = sinPitch * cosBearing;
+    const pz = cosPitch;
+
+    const ux = cosPitch * sinBearing;
+    const uy = cosPitch * cosBearing;
+    const uz = sinPitch;
+
+    const cameraConfig = {
+      fov: 15,
+      near: 1,
+      far: 100000,
+      position: [d * px, d * py, d * pz],
+      target: [0, 0, 0],
+      up: [ux, uy, uz]
+    }
+
+    const camera = new PerspectiveCamera(cameraConfig);
+
+    const overalyProps = {
       width: window.innerWidth,
       height: window.innerHeight,
+      camera,
+      viewport: glViewport,
       layers: [
         // this._renderGridLayer(),
         this._renderChoroplethLayer(),
-        this._renderHexagonLayer(),
-        this._renderScatterplotLayer(),
-        this._renderArcLayer()
-      ],
-      t
+        // this._renderHexagonLayer(),
+        // this._renderScatterplotLayer()
+        // this._renderArcLayer()
+      ]
     };
 
-    return <DeckGLOverlay {...deckGLOverlayProps} />;
+    return <DeckGLOverlay {...overalyProps} />;
   }
 
   _renderMap() {
-    const {viewport} = this.props;
+    const {mapViewport} = this.props;
     const {width, height} = this.state;
 
     return (
       <MapboxGLMap
         mapboxApiAccessToken={MAPBOX_ACCESS_TOKEN}
+        perspectiveEnabled={true}
         width={width}
         height={height}
-        latitude={viewport.latitude}
-        longitude={viewport.longitude}
-        zoom={viewport.zoom}
-        startDragLngLat={viewport.startDragLngLat}
         onChangeViewport={this._handleViewportChanged}
-        isDragging={viewport.isDragging}>
+        { ...mapViewport }>
         { this._renderOverlay() }
       </MapboxGLMap>
     );

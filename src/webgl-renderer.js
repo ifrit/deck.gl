@@ -103,29 +103,12 @@ export default class WebGLRenderer extends React.Component {
     this._animationLoop();
   }
 
-  componentWillReceiveProps(nextProps) {
-    const {camera} = this.state;
-
-    if (!camera || !nextProps.camera) {
-      return;
-    }
-
-    if (camera.position[0] === nextProps.camera.position[0] &&
-        camera.position[1] === nextProps.camera.position[1] &&
-        camera.position[2] === nextProps.camera.position[2]) {
-      return;
-    }
-
-    this.setState({
-      camera: new PerspectiveCamera(nextProps.camera)
-    });
-  }
-
   /**
    * Initialize LumaGL library and through it WebGL
    * @param {string} canvas
    */
   _initWebGL(canvas) {
+    const {camera} = this.props;
 
     let gl;
     try {
@@ -143,15 +126,13 @@ export default class WebGLRenderer extends React.Component {
       onMouseMove: throttle(this._onMouseMove, 100)
     });
 
-    const camera = new PerspectiveCamera(this.props.camera);
-
     // TODO - remove program parameter from scene, or move it into options
     const scene = new Scene(gl, {
       lights: this.props.lights,
       backgroundColor: {r: 0, g: 0, b: 0, a: 0}
     });
 
-    this.setState({gl, camera, scene, events});
+    this.setState({gl, scene, events});
 
     this.props.onRendererInitialized({gl, camera, scene});
   }
@@ -159,7 +140,8 @@ export default class WebGLRenderer extends React.Component {
   // TODO - move this back to luma.gl/scene.js
   /* eslint-disable max-statements */
   _pick(x, y) {
-    const {gl, scene, camera} = this.state;
+    const {gl, scene} = this.state;
+    const {camera} = this.props;
 
     const pickedModels = scene.pickModels(gl, {camera, x, y});
 
@@ -185,10 +167,11 @@ export default class WebGLRenderer extends React.Component {
       onBeforeRenderFrame,
       onAfterRenderFrame,
       onNeedRedraw,
-      pixelRatio
+      pixelRatio,
+      camera,
     } = this.props;
 
-    const {gl, scene, camera} = this.state;
+    const {gl, scene} = this.state;
     if (!gl) {
       return;
     }
