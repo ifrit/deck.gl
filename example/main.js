@@ -182,6 +182,9 @@ function pointsToArcs(points) {
 class ExampleApp extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      selectedHexagons: []
+    };
   }
 
   componentWillMount() {
@@ -256,32 +259,41 @@ class ExampleApp extends React.Component {
 
   @autobind
   _handleChoroplethHovered(info) {
-    // console.log('choropleth hovered:', info);
+    console.log('choropleth hovered:', info);
   }
 
   @autobind
   _handleChoroplethClicked(info) {
-    // console.log('choropleth clicked:', info);
+    console.log('choropleth clicked:', info);
   }
 
   @autobind
   _handleHexagonHovered(info) {
-    // console.log('Hexagon hovered:', info);
+    console.log('Hexagon hovered:', info);
+    const {hexData} = this.props;
+    if (info.index > 0) {
+      this.state.selectedHexagons = [{
+        ...hexData[info.index],
+        color: [0, 0, 255]
+      }];
+    } else {
+      this.state.selectedHexagons = [];
+    }
   }
 
   @autobind
   _handleHexagonClicked(info) {
-    // console.log('Hexagon clicked:', info);
+    console.log('Hexagon clicked:', info);
   }
 
   @autobind
   _handleScatterplotHovered(info) {
-    // console.log('Scatterplot hovered:', info);
+    console.log('Scatterplot hovered:', info);
   }
 
   @autobind
   _handleScatterplotClicked(info) {
-    // console.log('Scatterplot clicked:', info);
+    console.log('Scatterplot clicked:', info);
   }
 
   _renderGridLayer() {
@@ -329,6 +341,25 @@ class ExampleApp extends React.Component {
       longitude: mapViewState.longitude,
       zoom: mapViewState.zoom,
       data: hexData,
+      isPickable: true,
+      opacity: 0.1,
+      onHover: this._handleHexagonHovered,
+      onClick: this._handleHexagonClicked
+    });
+  }
+
+  _renderHexagonSelectionLayer() {
+    const {mapViewState} = this.props;
+    const {selectedHexagons} = this.state;
+
+    return new HexagonLayer({
+      id: 'hexagonSelectionLayer',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      latitude: mapViewState.latitude,
+      longitude: mapViewState.longitude,
+      zoom: mapViewState.zoom,
+      data: selectedHexagons,
       isPickable: true,
       opacity: 0.1,
       onHover: this._handleHexagonHovered,
@@ -389,8 +420,9 @@ class ExampleApp extends React.Component {
           this._renderGridLayer(),
           this._renderChoroplethLayer(),
           this._renderHexagonLayer(),
-          this._renderScatterplotLayer(),
-          this._renderArcLayer()
+          this._renderHexagonSelectionLayer(),
+          // this._renderScatterplotLayer(),
+          // this._renderArcLayer()
         ]}
       />
     );
