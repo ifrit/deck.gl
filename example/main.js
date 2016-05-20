@@ -272,12 +272,16 @@ class ExampleApp extends React.Component {
     console.log('Hexagon hovered:', info);
     const {hexData} = this.props;
     if (info.index > 0) {
-      this.state.selectedHexagons = [{
-        ...hexData[info.index],
-        color: [0, 0, 255]
-      }];
+      this.setState({
+        selectedHexagons: [{
+          ...hexData[info.index],
+          color: [0, 0, 255]
+        }]
+      });
     } else {
-      this.state.selectedHexagons = [];
+      this.setState({
+        selectedHexagons: []
+      });
     }
   }
 
